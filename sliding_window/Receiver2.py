@@ -34,7 +34,6 @@ def write_to_file(received_data, output_filename):
     with open(output_filename, "wb") as f:
         for seq in sorted(received_data.keys()):
             f.write(received_data[seq])
-    print(f"File received and saved as {output_filename}")
 
 
 def send_ack(sock, seq_number, addr):
@@ -56,7 +55,6 @@ def receive_file(port, output_filename):
     # Create a UDP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("", port))
-    print(f"Receiver is listening on port {port}...")
 
     # Store received data
     received_data = {}
@@ -71,14 +69,11 @@ def receive_file(port, output_filename):
         # Store the data in order of sequence number
         received_data[seq_number] = data
 
-        print(f"Received packet {seq_number} from {addr}")
-
         # Send acknowledgment for the received packet
         send_ack(sock, seq_number, addr)
 
         # Check if it's the last packet
         if eof_flag:
-            print("Last packet received. Finishing up...")
             break
 
     # Write received data to file

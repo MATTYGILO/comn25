@@ -2,18 +2,9 @@ import os
 import socket
 import sys
 import struct
-import time
 
 # Size of the data chunk
 CHUNK_SIZE = 1024
-
-# The header sizes
-SEQ_SIZE = 2
-EOF_SIZE = 1
-HEADER_SIZE = SEQ_SIZE + EOF_SIZE
-
-# The packet size
-PACKET_SIZE = CHUNK_SIZE + HEADER_SIZE
 
 
 def stream_file(filename):
@@ -28,8 +19,12 @@ def stream_file(filename):
 
 def build_packet(seq_number, eof_flag, chunk):
     """Builds a packet with header and data."""
+
+    # Build the header
     header = struct.pack("!H?", seq_number, eof_flag)
+
     packet = header + chunk
+
     # If the last chunk is smaller than CHUNK_SIZE, pad it
     if len(chunk) < CHUNK_SIZE:
         packet += b'\x00' * (CHUNK_SIZE - len(chunk))
@@ -53,18 +48,15 @@ def send_file(remote_host, port, filename):
 
     # Read and send the file in chunks using stream_file generator
     for chunk in stream_file(filename):
+
         # Build the packet: header + data
         packet = build_packet(seq_number, eof_flag, chunk)
 
         # Send the packet
         sock.sendto(packet, (remote_host, port))
-        print(f"Sent packet {seq_number} to {remote_host}:{port}")
 
         # Increment sequence number (wrap around if needed)
         seq_number = (seq_number + 1) % 65536  # Max 2 bytes
-
-        # Simulate network delay (optional)
-        time.sleep(0.01)  # 10ms round-trip delay
 
     # Send an empty packet to indicate the end of the file
     eof_flag = 1
