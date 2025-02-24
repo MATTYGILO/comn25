@@ -26,7 +26,7 @@ if __name__ == "__main__":
             receiver = subprocess.Popen(["python3", "Receiver{}.py".format(task), "12345", "received.jpg"])
 
             # Start the sender
-            sender = subprocess.Popen(["python3", "Sender{}.py".format(task), "localhost", "12345", "test.jpg", str(delay)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            sender = subprocess.Popen(["python3", "Sender{}.py".format(task), "localhost", "12345", "assets/test.jpg", str(delay)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             # Get the sender response
             response = sender.communicate()

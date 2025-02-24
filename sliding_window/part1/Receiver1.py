@@ -1,69 +1,27 @@
-import socket
 import sys
-import struct
 
-# Constants
-CHUNK_SIZE = 1024
-SEQ_SIZE = 2
-EOF_SIZE = 1
-HEADER_SIZE = SEQ_SIZE + EOF_SIZE
-PACKET_SIZE = CHUNK_SIZE + HEADER_SIZE
-
-# The
+from sliding_window.lib.const import REMOTE_HOST
+from sliding_window.lib.file_stream import FileStream
+from sliding_window.lib.packet_stream import PacketStream
 
 
-def extract_packet(packet):
-    """Extracts header and data from the packet."""
-    header = packet[:HEADER_SIZE]
-    data = packet[HEADER_SIZE:]
-    seq_number, eof_flag = struct.unpack("!H?", header)
-    return seq_number, eof_flag, data
+def receive_file(port, output_path):
 
+    # The packet streamer
+    packet_stream = PacketStream(REMOTE_HOST, port)
 
-def stream_packets(sock):
-    """Generator that streams packets from the socket."""
-    while True:
-        packet, addr = sock.recvfrom(PACKET_SIZE)
-        if len(packet) < HEADER_SIZE:
-            continue
-        seq_number, eof_flag, data = extract_packet(packet)
-        yield seq_number, eof_flag, data, addr
+    # Listen for packets
+    packet_generator = packet_stream.listen()
 
+    # Convert it into a file
+    file_stream = FileStream(output_path)
+    file_stream.from_packets(packet_generator)
 
-def write_to_file(received_data, output_filename):
-    """Writes received data to the output file in order of sequence number."""
-    with open(output_filename, "wb") as f:
-        for seq in sorted(received_data.keys()):
-            f.write(received_data[seq])
-
-
-def receive_file(port, output_filename):
-    """Receive a file over UDP and save it to output_filename."""
-
-    # Create a UDP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("", port))
-
-    # Store received data
-    received_data = {}
-
-    # Stream packets and process
-    for seq_number, eof_flag, data, addr in stream_packets(sock):
-        # Check for duplicate packets
-        if seq_number in received_data:
-            print(f"Duplicate packet {seq_number} received. Ignoring.")
-            continue
-
-        # Store the data in order of sequence number
-        received_data[seq_number] = data
-
-        # Check if it's the last packet
-        if eof_flag:
-            break
+    # Wait for all the packets
+    file_stream.write()
 
     # Write received data to file
-    write_to_file(received_data, output_filename)
-    sock.close()
+    packet_stream.close()
 
 
 if __name__ == "__main__":

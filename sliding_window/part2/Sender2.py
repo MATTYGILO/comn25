@@ -5,24 +5,8 @@ import sys
 import struct
 import time
 
-from sliding_window.lib.packets import build_packet
-
-# Size of the data chunk
-CHUNK_SIZE = 1024
-
-# The header sizes
-SEQ_SIZE = 2
-EOF_SIZE = 1
-HEADER_SIZE = SEQ_SIZE + EOF_SIZE
-
-# The packet size
-PACKET_SIZE = CHUNK_SIZE + HEADER_SIZE
-
-# The size of the acknowledgment packet
-ACK_SIZE = SEQ_SIZE
-
-PACKET_LOSS_RATE = 0.005  # 0.5% packet loss
-# DELAY_MS = 5  # 10 milliseconds delay
+from sliding_window.lib.const import PACKET_LOSS_RATE, CHUNK_SIZE, ACK_SIZE
+from sliding_window.lib.packet import build_packet
 
 def stream_file(filename):
     """Generator that reads a file in chunks and signals end of file."""
@@ -34,14 +18,7 @@ def stream_file(filename):
             yield chunk
 
 
-def wait_for_ack(sock, seq_number, timeout):
-    try:
-        sock.settimeout(timeout / 1000)
-        ack, addr = sock.recvfrom(ACK_SIZE)
-        ack_seq_number = struct.unpack("!H", ack)[0]
-        return ack_seq_number == seq_number
-    except socket.timeout:
-        return False
+
 
 
 def send_file(remote_host, port, filename, timeout):

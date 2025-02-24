@@ -2,15 +2,6 @@ import socket
 import sys
 import struct
 
-# Constants
-CHUNK_SIZE = 1024
-SEQ_SIZE = 2
-EOF_SIZE = 1
-HEADER_SIZE = SEQ_SIZE + EOF_SIZE
-PACKET_SIZE = CHUNK_SIZE + HEADER_SIZE
-ACK_SIZE = SEQ_SIZE
-
-
 def extract_packet(packet):
     """Extracts header and data from the packet."""
     header = packet[:HEADER_SIZE]
