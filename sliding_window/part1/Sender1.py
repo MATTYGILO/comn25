@@ -1,7 +1,9 @@
 import os
 import socket
 import sys
-import struct
+import time
+
+from sliding_window.lib.packets import build_packet
 
 # Size of the data chunk
 CHUNK_SIZE = 1024
@@ -15,20 +17,6 @@ def stream_file(filename):
             if not chunk:
                 break
             yield chunk
-
-
-def build_packet(seq_number, eof_flag, chunk):
-    """Builds a packet with header and data."""
-
-    # Build the header
-    header = struct.pack("!H?", seq_number, eof_flag)
-
-    packet = header + chunk
-
-    # If the last chunk is smaller than CHUNK_SIZE, pad it
-    if len(chunk) < CHUNK_SIZE:
-        packet += b'\x00' * (CHUNK_SIZE - len(chunk))
-    return packet
 
 
 def send_file(remote_host, port, filename):
@@ -52,11 +40,14 @@ def send_file(remote_host, port, filename):
         # Build the packet: header + data
         packet = build_packet(seq_number, eof_flag, chunk)
 
+        time.sleep(5 / 1000.0)
+
         # Send the packet
         sock.sendto(packet, (remote_host, port))
 
         # Increment sequence number (wrap around if needed)
         seq_number = (seq_number + 1) % 65536  # Max 2 bytes
+
 
     # Send an empty packet to indicate the end of the file
     eof_flag = 1

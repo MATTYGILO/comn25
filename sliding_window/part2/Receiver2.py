@@ -86,7 +86,7 @@ if __name__ == "__main__":
         port = int(sys.argv[1])
         output_filename = sys.argv[2]
     except IndexError:
-        print("Usage: python3 Receiver1.py <Port> <Filename>")
+        print("Usage: python3 Receiver2.py <Port> <Filename>")
         sys.exit(1)
 
     receive_file(port, output_filename)

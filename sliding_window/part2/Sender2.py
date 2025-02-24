@@ -5,6 +5,8 @@ import sys
 import struct
 import time
 
+from sliding_window.lib.packets import build_packet
+
 # Size of the data chunk
 CHUNK_SIZE = 1024
 
@@ -30,16 +32,6 @@ def stream_file(filename):
             if not chunk:
                 break
             yield chunk
-
-
-def build_packet(seq_number, eof_flag, chunk):
-    """Builds a packet with header and data."""
-    header = struct.pack("!H?", seq_number, eof_flag)
-    packet = header + chunk
-    # If the last chunk is smaller than CHUNK_SIZE, pad it
-    if len(chunk) < CHUNK_SIZE:
-        packet += b'\x00' * (CHUNK_SIZE - len(chunk))
-    return packet
 
 
 def wait_for_ack(sock, seq_number, timeout):

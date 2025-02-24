@@ -1,5 +1,6 @@
 import subprocess
 
+
 # Runs the different python files at the same time
 if __name__ == "__main__":
 
@@ -18,10 +19,6 @@ if __name__ == "__main__":
 
         r = []
         t = []
-
-        # # Divide the delay by 10
-        # delay = delay
-
 
         for _ in range(5):
 
@@ -51,3 +48,6 @@ if __name__ == "__main__":
     print("delays: ", delays)
     print("retransmissions: ", retrans)
     print("throughput: ", throughput)
+
+
+
