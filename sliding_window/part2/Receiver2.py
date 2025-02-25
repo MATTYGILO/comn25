@@ -1,68 +1,40 @@
-import socket
 import sys
-import struct
 
-from sliding_window.lib.const import PACKET_SIZE, HEADER_SIZE, ACK_SIZE
-
-
-def extract_packet(packet):
-    """Extracts header and data from the packet."""
-    header = packet[:HEADER_SIZE]
-    data = packet[HEADER_SIZE:]
-    seq_number, eof_flag = struct.unpack("!H?", header)
-    return seq_number, eof_flag, data
+from sliding_window.lib.file_stream import FileStream
+from sliding_window.lib.packet_stream import PacketStream
 
 
-def stream_packets(sock):
-    """Generator that streams packets from the socket."""
-    while True:
-        packet, addr = sock.recvfrom(PACKET_SIZE)
-        if len(packet) < HEADER_SIZE:
-            continue
-        seq_number, eof_flag, data = extract_packet(packet)
-        yield seq_number, eof_flag, data, addr
+def map_with_ack(packet_stream: PacketStream, packet_generator):
+
+    for packet in packet_generator:
+        packet_stream.send_ack(packet.seq_number)
+        yield packet
 
 
-def write_to_file(received_data, output_filename):
-    """Writes received data to the output file in order of sequence number."""
-    with open(output_filename, "wb") as f:
-        for seq in sorted(received_data.keys()):
-            f.write(received_data[seq])
+def receiver1(port, output_path):
 
+    print(f"Receiving file on port {port} and saving to {output_path}")
 
-def receive_file(port, output_filename):
-    """Receive a file over UDP and save it to output_filename."""
+    # The packet streamer
+    packet_stream = PacketStream("0.0.0.0", port)
 
-    # Create a UDP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("", port))
+    # Listen for packets
+    packet_generator = packet_stream.listen()
 
-    # Store received data
-    received_data = {}
+    # Map the packets with acknowledgments
+    packet_generator = map_with_ack(packet_stream, packet_generator)
 
-    # Stream packets and process
-    for seq_number, eof_flag, data, addr in stream_packets(sock):
+    # Convert it into a file
+    file_stream = FileStream(output_path)
+    file_stream.from_packets(packet_generator)
 
-        print("Received packet", seq_number)
-
-        # Check for duplicate packets
-        if seq_number in received_data:
-            print(f"Duplicate packet {seq_number} received. Ignoring.")
-            continue
-
-        # Store the data in order of sequence number
-        received_data[seq_number] = data
-
-        # Send acknowledgment for the received packet
-        send_ack(sock, seq_number, addr)
-
-        # Check if it's the last packet
-        if eof_flag:
-            break
+    # Wait for all the packets
+    file_stream.write()
 
     # Write received data to file
-    write_to_file(received_data, output_filename)
-    sock.close()
+    packet_stream.close()
+
+    print("Finished receiving file 1")
 
 
 if __name__ == "__main__":
@@ -73,4 +45,15 @@ if __name__ == "__main__":
         print("Usage: python3 Receiver3.py <Port> <Filename>")
         sys.exit(1)
 
-    receive_file(port, output_filename)
+    receiver1(port, output_filename)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python3 Receiver3.py <Port> <Filename>")
+        sys.exit(1)
+
+    port = int(sys.argv[1])
+    filename = sys.argv[2]
+
+    receiver1(port, filename)

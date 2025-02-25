@@ -1,80 +1,59 @@
-from multiprocessing import Process
+import subprocess
+import time
+import os
 
-from sliding_window.part2.Receiver2 import receive_file
-from sliding_window.part2.Sender2 import send_file
-
-
-# def run_receiver():
-#     receive_file(8001, "received.jpg")
-#
-#
-# def run_sender():
-#     send_file("localhost", 8001, "../assets/test.jpg", 10)
-#
+# Configuration
+REMOTE_HOST = "localhost"
+PORT = 54321
+INPUT_FILE = "../assets/test.jpg"
+OUTPUT_FILE = "rfile.jpg"
 
 
-# Runs the different python files at the same time
+def run_test():
+    # Check if input file exists
+    if not os.path.exists(INPUT_FILE):
+        print(f"Input file '{INPUT_FILE}' not found.")
+        return
+
+    # Remove the output file if it exists from a previous run
+    if os.path.exists(OUTPUT_FILE):
+        os.remove(OUTPUT_FILE)
+
+    # Start Receiver3.py
+    receiver_cmd = f"python3 Receiver2.py {PORT} {OUTPUT_FILE}"
+    print(f"Starting Receiver: {receiver_cmd}")
+    receiver_process = subprocess.Popen(receiver_cmd, shell=True)
+
+    # Give receiver some time to start listening
+    time.sleep(1)
+
+    # Start Sender3.py
+    sender_cmd = f"python3 Sender2.py {REMOTE_HOST} {PORT} {INPUT_FILE} {30}"
+    print(f"Starting Sender: {sender_cmd}")
+    sender_process = subprocess.Popen(sender_cmd, shell=True)
+
+    # Wait for the sender to complete
+    sender_process.wait()
+    print("Sender finished.")
+
+    # Give some time for receiver to write the file
+    time.sleep(2)
+
+    # Terminate the receiver
+    receiver_process.terminate()
+    print("Receiver terminated.")
+
+    # Verify file integrity
+    if os.path.exists(OUTPUT_FILE):
+        result = subprocess.run(["diff", INPUT_FILE, OUTPUT_FILE], capture_output=True, text=True)
+        if result.returncode == 0:
+            print("Test passed: Files are identical.")
+        else:
+            print("Test failed: Files are different.")
+            print(result.stdout)
+    else:
+        print("Test failed: Output file not found.")
+
+
 if __name__ == "__main__":
-    # receiver_process = Process(target=run_receiver)
-    # sender_process = Process(target=run_sender)
-    #
-    # receiver_process.start()
-    # sender_process.start()
-    #
-    # receiver_process.join()
-    # sender_process.join()
-    #
-    # raise NotImplementedError("Please implement this part of the code")
-
-
-    # Choose the task to run
-    task = 2
-    timeout = 10
-
-    packet_loss = 0.05
-
-    delays = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100]
-    retrans = []
-    throughput = []
-
-    port = 8001
-
-
-    for delay in delays:
-
-        r = []
-        t = []
-
-        for _ in range(5):
-
-            # Start the receiver
-            receiver = subprocess.Popen(["python3", "Receiver{}.py".format(task), str(port), "received.jpg"])
-
-            # Start the sender
-            sender = subprocess.Popen(["python3", "Sender{}.py".format(task), "localhost", str(port), "../assets/test.jpg", str(delay)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-            # Get the sender response
-            response = sender.communicate()
-
-            print("Response: ", response)
-
-            # Split to get retrans and throughput
-            r.append(int(response[0].split()[0]))
-            t.append(float(response[0].split()[1]))
-
-            # Wait for both processes to complete
-            receiver.wait()
-            sender.wait()
-
-        # Append the mean of r and t
-        retrans.append(sum(r) / len(r))
-        throughput.append(sum(t) / len(t))
-
-        print("Delay {}ms, Retransmissions: {}, Throughput: {}".format(delay, retrans[-1], throughput[-1]))
-
-    print("delays: ", delays)
-    print("retransmissions: ", retrans)
-    print("throughput: ", throughput)
-
-
-
+    run_test()

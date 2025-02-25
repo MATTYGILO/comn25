@@ -1,23 +1,60 @@
 import subprocess
 import time
-import matplotlib.pyplot as plt
+import os
 
-def save_plot(window_sizes, throughput_5ms, throughput_25ms, throughput_100ms):
-    plt.figure(figsize=(10, 6))
-    plt.plot(window_sizes, throughput_5ms, marker='o', label='Delay (5ms)', color='blue')
-    plt.plot(window_sizes, throughput_25ms, marker='s', label='Delay (25ms)', color='orange')
-    plt.plot(window_sizes, throughput_100ms, marker='^', label='Delay (100ms)', color='grey')
+# Configuration
+REMOTE_HOST = "127.0.0.1"  # Using IP instead of 'localhost' for consistency
+PORT = 54321
+INPUT_FILE = "../assets/test.jpg"
+OUTPUT_FILE = "rfile.jpg"
+TIMEOUT = 30  # Retransmission timeout in milliseconds
+WINDOW_SIZE = 5  # Set default window size for Go-Back-N
 
-    plt.xscale('log', basex=2)
-    plt.xlabel('Window Size')
-    plt.ylabel('Throughput (KBps)')
-    plt.title('Throughput vs Window Size (Go-Back-N) with VirtualLink')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+def run_test():
+    # Check if input file exists
+    if not os.path.exists(INPUT_FILE):
+        print(f"Input file '{INPUT_FILE}' not found.")
+        return
 
-def main():
-    pass
+    # Remove the output file if it exists from a previous run
+    if os.path.exists(OUTPUT_FILE):
+        os.remove(OUTPUT_FILE)
+
+    # Start Receiver3.py
+    receiver_cmd = f"python3 Receiver3.py {PORT} {OUTPUT_FILE}"
+    print(f"Starting Receiver: {receiver_cmd}")
+    receiver_process = subprocess.Popen(receiver_cmd, shell=True)
+
+    # Give receiver more time to start listening
+    time.sleep(1)  # Increased to 3 seconds
+
+    # Start Sender3.py with Go-Back-N parameters
+    sender_cmd = f"python3 Sender3.py {REMOTE_HOST} {PORT} {INPUT_FILE} {TIMEOUT} {WINDOW_SIZE}"
+    print(f"Starting Sender: {sender_cmd}")
+    sender_process = subprocess.Popen(sender_cmd, shell=True)
+
+    # Wait for the sender to complete
+    sender_process.wait()
+    print("Sender finished.")
+
+    # Give some time for receiver to write the file
+    time.sleep(1)
+
+    # Terminate the receiver
+    receiver_process.terminate()
+    print("Receiver terminated.")
+
+    # Verify file integrity
+    if os.path.exists(OUTPUT_FILE):
+        result = subprocess.run(["diff", INPUT_FILE, OUTPUT_FILE], capture_output=True, text=True)
+        if result.returncode == 0:
+            print("Test passed: Files are identical.")
+        else:
+            print("Test failed: Files are different.")
+            print(result.stdout)
+    else:
+        print("Test failed: Output file not found.")
+
 
 if __name__ == "__main__":
-    pass
+    run_test()

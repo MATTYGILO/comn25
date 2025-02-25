@@ -25,10 +25,12 @@ class FileStream:
 
     def read(self):
 
+        print(f"Reading file from {self.file_path}")
+
         # Check if file exists
         if not os.path.exists(self.file_path):
             print(f"File {self.file_path} not found.")
-            return
+            raise FileNotFoundError
 
         with open(self.file_path, "rb") as f:
             for seq_number, chunk in enumerate(iter(lambda: f.read(CHUNK_SIZE), b'')):
@@ -41,7 +43,7 @@ class FileStream:
     def to_packets(self):
 
         # If the file dictionary is empty
-        if not self.file_dic:
+        if len(self.file_dic) == 0:
             self.read()
 
         # If the file dictionary is still empty

@@ -1,117 +1,70 @@
-import socket
 import sys
-import struct
+from collections import deque
 
-# Constants
-CHUNK_SIZE = 1024
-SEQ_SIZE = 2
-EOF_SIZE = 1
-HEADER_SIZE = SEQ_SIZE + EOF_SIZE
-PACKET_SIZE = CHUNK_SIZE + HEADER_SIZE
-ACK_SIZE = SEQ_SIZE
+from sliding_window.lib.file_stream import FileStream
+from sliding_window.lib.packet_stream import PacketStream
 
-def extract_packet(packet):
-    """
-    Extract the header and data from the packet.
-    Header format: !H? => (seq_number, eof_flag)
-    """
-    header = packet[:HEADER_SIZE]
-    data = packet[HEADER_SIZE:]
-    seq_number, eof_flag = struct.unpack("!H?", header)
-    return seq_number, eof_flag, data
 
-def send_ack(sock, ack_seq_num, addr):
-    """
-    Send an acknowledgment for the cumulative highest
-    in-order sequence number we have received so far.
-    """
-    # We store just the seq_number in 2 bytes (unsigned short, big-endian)
-    ack_data = struct.pack("!H", ack_seq_num)
-    # Ensure we always send exactly ACK_SIZE bytes
-    if len(ack_data) < ACK_SIZE:
-        ack_data += b'\x00' * (ACK_SIZE - len(ack_data))
-    elif len(ack_data) > ACK_SIZE:
-        ack_data = ack_data[:ACK_SIZE]
+def receiver3(port, output_path):
 
-    sock.sendto(ack_data, addr)
+    print(f"Receiving file on port {port} and saving to {output_path}")
 
-def receive_file(port, output_filename):
-    """
-    Receive a file over UDP and save it to output_filename using
-    a basic Go-Back-N approach:
-      - expectedSeqNum tracks the next in-order sequence number.
-      - Out-of-order packets are discarded.
-      - We send cumulative ACKs for the highest contiguous seq received.
-      - Stop on an in-order packet that carries eof_flag=1.
-    """
+    # The packet streamer
+    packet_stream = PacketStream("0.0.0.0", port)
 
-    # Create a UDP socket and bind to the given port
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("", port))
+    # Listen for packets
+    packet_generator = packet_stream.listen()
 
-    # This dictionary will hold the data for each in-order packet we accept
-    # Key: seq_number, Value: raw chunk data
-    received_data = {}
+    # Go-Back-N variables
+    expected_seq_num = 0
+    received_packets = deque()
 
-    # The next sequence number we want to see
-    expectedSeqNum = 0
+    # Create the file stream to write packets to a file
+    file_stream = FileStream(output_path)
 
-    print(f"Receiver listening on port {port} ...")
+    # Main receiving loop
+    for packet in packet_generator:
 
-    while True:
-        # Block until we receive up to PACKET_SIZE bytes
-        packet, addr = sock.recvfrom(PACKET_SIZE + 100)  # a bit extra is OK
+        # Check if the packet sequence number is as expected
+        if packet.seq_number == expected_seq_num:
+            # Correct packet, add to buffer and send ACK
+            received_packets.append(packet)
+            print(f"Received expected packet {packet.seq_number}")
+            packet_stream.send_ack(packet.seq_number)
+            expected_seq_num += 1
 
-        # Ignore any weird short packets
-        if len(packet) < HEADER_SIZE:
-            continue
+            # Deliver packets in order
+            while received_packets and received_packets[0].seq_number == expected_seq_num:
+                received_packets.popleft()
+                expected_seq_num += 1
 
-        seq_number, eof_flag, data = extract_packet(packet)
-
-        # If this is exactly the packet we expect:
-        if seq_number == expectedSeqNum:
-            # Store the data
-            received_data[seq_number] = data
-            # Increment expectedSeqNum
-            expectedSeqNum += 1
-
-            # Send an ACK for the newly received packet
-            # (which means we have now cumulatively received up to seq_number)
-            send_ack(sock, seq_number, addr)
-
-            # If it's the last packet (EOF set), we can stop
-            if eof_flag:
-                break
+        elif packet.seq_number < expected_seq_num:
+            # Duplicate packet, resend ACK
+            print(f"Duplicate packet {packet.seq_number}, resending ACK")
+            packet_stream.send_ack(packet.seq_number)
 
         else:
-            # Out of order or duplicate
-            # GBN discards out-of-order packets
-            # We still send an ACK for the highest in-order packet we have
-            # That is expectedSeqNum - 1
-            # (If we've never received anything in-order, that's -1, but
-            # typically the sender won't rely on negative ACK in practice)
-            ack_seq_num = expectedSeqNum - 1
-            if ack_seq_num < 0:
-                ack_seq_num = 0
-            send_ack(sock, ack_seq_num, addr)
+            # Out-of-order packet, ignore it
+            print(f"Out-of-order packet {packet.seq_number}, expected {expected_seq_num}")
 
-    # Once we exit the loop, we have all in-order packets [0 .. expectedSeqNum-1]
-    # Write them to disk in ascending order
-    with open(output_filename, "wb") as f:
-        for seq in range(expectedSeqNum):
-            # In pure GBN, we always had them in order. But just in case:
-            f.write(received_data[seq])
+    # Convert received packets into a file
+    file_stream.from_packets(received_packets)
 
-    sock.close()
-    print(f"File received successfully as {output_filename}")
+    # Write received data to file
+    file_stream.write()
+
+    # Close the packet stream
+    packet_stream.close()
+
+    print("Finished receiving file")
+
 
 if __name__ == "__main__":
-    # Usage: python3 Receiver3.py <Port> <Filename>
-    try:
-        port = int(sys.argv[1])
-        out_filename = sys.argv[2]
-    except (IndexError, ValueError):
+    if len(sys.argv) != 3:
         print("Usage: python3 Receiver3.py <Port> <Filename>")
         sys.exit(1)
 
-    receive_file(port, out_filename)
+    port = int(sys.argv[1])
+    filename = sys.argv[2]
+
+    receiver3(port, filename)
