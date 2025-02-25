@@ -1,6 +1,5 @@
 import socket
 import struct
-import time
 
 from sliding_window.lib.const import PACKET_SIZE, ACK_SIZE
 from sliding_window.lib.packet import Packet

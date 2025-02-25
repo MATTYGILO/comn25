@@ -1,20 +1,50 @@
-import socket
 import sys
 import os
 import time
+import threading
 
 # Import your new classes for file reading and packet handling.
 from sliding_window.lib.file_stream import FileStream
 from sliding_window.lib.packet_stream import PacketStream
 
 
+def wait_for_acks(indices, packet_stream):
+
+    # Function to wait for an ACK for a single packet
+    def wait_for_ack(index, result_dict):
+        if packet_stream.wait_for_ack(index, timeout_ms):
+            result_dict[index] = True
+        else:
+            result_dict[index] = False
+
+    # Dictionary to store ACK results
+    ack_results = {}
+
+    # Create and start threads to wait for ACKs concurrently
+    threads = []
+    for i in indices:
+        thread = threading.Thread(target=wait_for_ack, args=(i, ack_results))
+        thread.start()
+        threads.append(thread)
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+
+    # Check ACK results
+    for i in indices:
+        if not ack_results.get(i, False):
+            print("Failed on {}".format(i))
+            return i
+
+
 def send_window(packet_stream, file_stream, start_index, window_size):
 
     # The indices we are waiting for
-    indices = range(start_index, min(start_index+window_size, len(file_stream)))
+    indices = range(start_index, min(start_index + window_size, len(file_stream)))
 
+    # Send all packets in the window
     for i in indices:
-
         # Get the packet
         packet = file_stream.get_packet(i)
 
@@ -24,12 +54,6 @@ def send_window(packet_stream, file_stream, start_index, window_size):
         # Send the packet
         packet_stream.sock.sendto(packet.to_bytes(), (remote_host, port))
 
-    for i in indices:
-
-        # 7. Check for ACKs for all packets in the window.
-        if not packet_stream.wait_for_ack(i, timeout_ms):
-            print("Failed on {}".format(i))
-            return i
 
     # The index we got to
     return start_index + window_size
