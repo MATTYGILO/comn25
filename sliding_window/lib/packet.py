@@ -25,7 +25,7 @@ class Packet:
         seq_number, eof_flag = struct.unpack("!H?", header)
         return cls(seq_number, eof_flag, data)
 
-    def build(self):
+    def to_bytes(self):
         """
         Build a packet with:
         - 2-byte sequence number (big-endian)

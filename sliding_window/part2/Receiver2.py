@@ -2,6 +2,9 @@ import socket
 import sys
 import struct
 
+from sliding_window.lib.const import PACKET_SIZE, HEADER_SIZE, ACK_SIZE
+
+
 def extract_packet(packet):
     """Extracts header and data from the packet."""
     header = packet[:HEADER_SIZE]
@@ -27,19 +30,6 @@ def write_to_file(received_data, output_filename):
             f.write(received_data[seq])
 
 
-def send_ack(sock, seq_number, addr):
-    """Send an acknowledgment for the received packet."""
-    ack = struct.pack("!H", seq_number)
-
-    # Make it the ack size
-    if len(ack) < ACK_SIZE:
-        ack += b'\x00' * (ACK_SIZE - len(ack))
-    else:
-        ack = ack[:ACK_SIZE]
-
-    sock.sendto(ack, addr)
-
-
 def receive_file(port, output_filename):
     """Receive a file over UDP and save it to output_filename."""
 
@@ -52,6 +42,9 @@ def receive_file(port, output_filename):
 
     # Stream packets and process
     for seq_number, eof_flag, data, addr in stream_packets(sock):
+
+        print("Received packet", seq_number)
+
         # Check for duplicate packets
         if seq_number in received_data:
             print(f"Duplicate packet {seq_number} received. Ignoring.")
@@ -77,7 +70,7 @@ if __name__ == "__main__":
         port = int(sys.argv[1])
         output_filename = sys.argv[2]
     except IndexError:
-        print("Usage: python3 Receiver2.py <Port> <Filename>")
+        print("Usage: python3 Receiver3.py <Port> <Filename>")
         sys.exit(1)
 
     receive_file(port, output_filename)

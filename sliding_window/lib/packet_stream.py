@@ -1,7 +1,8 @@
 import socket
+import struct
 import time
 
-from sliding_window.lib.const import PACKET_SIZE
+from sliding_window.lib.const import PACKET_SIZE, ACK_SIZE
 from sliding_window.lib.packet import Packet
 
 
@@ -19,12 +20,33 @@ class PacketStream:
 
         # The packets provided
         self.packets = packets
+        self.addr = None
 
         # Debug mode
         self.debug = debug
 
-    def wait_for_connection(self):
-        pass
+    def wait_for_ack(self, seq_number, timeout):
+        try:
+            print("Waiting for ack")
+            self.sock.settimeout(timeout / 1000)
+            ack, self.addr = self.sock.recvfrom(ACK_SIZE)
+            ack_seq_number = struct.unpack("!H", ack)[0]
+            return ack_seq_number == seq_number
+        except socket.timeout:
+            return False
+
+    def send_ack(self, seq_number):
+
+        # Send an acknowledgment for the received packet
+        ack = struct.pack("!H", seq_number)
+
+        # Make it the ack size
+        if len(ack) < ACK_SIZE:
+            ack += b'\x00' * (ACK_SIZE - len(ack))
+        else:
+            ack = ack[:ACK_SIZE]
+
+        self.sock.sendto(ack, self.addr)
 
     def listen(self):
 
@@ -36,22 +58,18 @@ class PacketStream:
 
         while True:
 
-            print("Waiting for packet")
-
             # Receive a packet
-            packet_bytes, addr = self.sock.recvfrom(PACKET_SIZE)
-
-            print(f"Received packet {packet_bytes} from {addr}")
+            packet_bytes, self.addr = self.sock.recvfrom(PACKET_SIZE)
 
             # Get the packet
             packet = Packet.from_bytes(packet_bytes)
 
             if self.debug:
-                print(f"Received packet {packet.seq_number} from {addr}")
+                print(f"Received packet {packet.seq_number} from {self.addr}")
 
             yield packet
 
-    def stream(self, packet_generator):
+    def stream(self, packet_generator, callback=None):
 
         # Bind the socket
         self.sock.bind((self.remote_host, self.port))
@@ -63,23 +81,11 @@ class PacketStream:
         for packet in packet_generator:
 
             # Send the data to the stream
-            self.sock.sendto(packet.build(), (self.remote_host, self.port))
+            self.sock.sendto(packet.to_bytes(), (self.remote_host, self.port))
 
             if self.debug:
                 print(f"Sent packet {packet.seq_number} to {self.remote_host}:{self.port}")
 
     def close(self):
         self.sock.close()
-
-    @classmethod
-    def from_packets(cls, port, packet_generator):
-        """Create a PacketStream from a FileStream."""
-
-        # Create the packet stream
-        packet_stream = cls(port)
-
-        # Stream the packets
-        packet_stream.stream(packet_generator)
-
-        return packet_stream
 

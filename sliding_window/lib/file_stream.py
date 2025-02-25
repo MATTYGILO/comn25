@@ -34,7 +34,19 @@ class FileStream:
             for seq_number, chunk in enumerate(iter(lambda: f.read(CHUNK_SIZE), b'')):
                 self.file_dic[seq_number] = chunk
 
+    # The total number of packets
+    def __len__(self):
+        return len(self.file_dic)
+
     def to_packets(self):
+
+        # If the file dictionary is empty
+        if not self.file_dic:
+            self.read()
+
+        # If the file dictionary is still empty
+        if not self.file_dic:
+            raise ValueError("No data to send")
 
         # The sorted file dic keys
         file_dic_keys = sorted(self.file_dic.keys())
