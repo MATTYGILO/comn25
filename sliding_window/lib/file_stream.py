@@ -14,6 +14,9 @@ class FileStream:
 
         self.debug = debug
 
+    def n_packets(self):
+        return len(self.file_dic)
+
     def write(self):
 
         if self.debug:
@@ -53,22 +56,32 @@ class FileStream:
         # The sorted file dic keys
         file_dic_keys = sorted(self.file_dic.keys())
 
-        # The last sequence number
-        last_seq = file_dic_keys[-1]
-
         for seq in file_dic_keys:
+            yield self.get_packet(seq)
 
-            # Whether end of file
-            eof_flag = last_seq == seq
+    def get_packet(self, seq_number):
 
-            # Create the packet
-            packet = Packet(seq, eof_flag, self.file_dic[seq])
+        # If the file dictionary is empty
+        if len(self.file_dic) == 0:
+            raise ValueError("No data to send")
 
-            yield packet
+        if seq_number not in self.file_dic:
+            return None
+
+        # Get the data
+        data = self.file_dic[seq_number]
+
+        # Whether the end of the file
+        eof_flag = seq_number == len(self.file_dic) - 1
+
+        return Packet(seq_number, eof_flag, data)
+
+    def from_packet(self, packet):
+
+        # Add the packet to the dictionary
+        self.file_dic[packet.seq_number] = packet.data
 
     def from_packets(self, packets):
-
-        print("Waiting for packets")
 
         # Process the packet
         for packet in packets:
@@ -77,7 +90,7 @@ class FileStream:
                 print(f"Received packet {packet.seq_number}")
 
             # Add the packet to the dictionary
-            self.file_dic[packet.seq_number] = packet.data
+            self.from_packet(packet)
 
             # If the packet is the last packet
             if packet.eof_flag:

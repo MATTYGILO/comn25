@@ -15,40 +15,13 @@ def receiver3(port, output_path):
     # Listen for packets
     packet_generator = packet_stream.listen()
 
-    # Go-Back-N variables
-    expected_seq_num = 0
-    received_packets = deque()
-
     # Create the file stream to write packets to a file
     file_stream = FileStream(output_path)
 
     # Main receiving loop
     for packet in packet_generator:
-
-        # Check if the packet sequence number is as expected
-        if packet.seq_number == expected_seq_num:
-            # Correct packet, add to buffer and send ACK
-            received_packets.append(packet)
-            print(f"Received expected packet {packet.seq_number}")
-            packet_stream.send_ack(packet.seq_number)
-            expected_seq_num += 1
-
-            # Deliver packets in order
-            while received_packets and received_packets[0].seq_number == expected_seq_num:
-                received_packets.popleft()
-                expected_seq_num += 1
-
-        elif packet.seq_number < expected_seq_num:
-            # Duplicate packet, resend ACK
-            print(f"Duplicate packet {packet.seq_number}, resending ACK")
-            packet_stream.send_ack(packet.seq_number)
-
-        else:
-            # Out-of-order packet, ignore it
-            print(f"Out-of-order packet {packet.seq_number}, expected {expected_seq_num}")
-
-    # Convert received packets into a file
-    file_stream.from_packets(received_packets)
+        packet_stream.send_ack(packet.seq_number)
+        file_stream.from_packet(packet)
 
     # Write received data to file
     file_stream.write()
