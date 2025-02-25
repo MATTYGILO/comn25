@@ -1,22 +1,22 @@
-import subprocess
+from multiprocessing import Process
+from sliding_window.part1.Receiver1 import receiver1
+from sliding_window.part1.Sender1 import sender1
 
-# Runs the different python files at the same time
+
+def run_receiver():
+    receiver1(8080, "received.jpg")
+
+
+def run_sender():
+    sender1("localhost", 8080, "../assets/test.jpg")
+
+
 if __name__ == "__main__":
+    receiver_process = Process(target=run_receiver)
+    sender_process = Process(target=run_sender)
 
-    # The task we are doing
-    task = 1
+    receiver_process.start()
+    sender_process.start()
 
-    # Start the receiver
-    receiver = subprocess.Popen(["python3", "Receiver{}.py".format(task), "12345", "received.jpg"])
-
-    # Start the sender
-    sender = subprocess.Popen(["python3", "Sender{}.py".format(task), "localhost", "12345", "../assets/test.jpg"],
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    receiver.wait()
-    sender.wait()
-
-    # Stream their outputs
-    print(sender.communicate())
-    print(receiver.communicate())
-
+    receiver_process.join()
+    sender_process.join()

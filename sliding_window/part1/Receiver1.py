@@ -1,17 +1,25 @@
 import sys
 
-from sliding_window.lib.const import REMOTE_HOST
 from sliding_window.lib.file_stream import FileStream
 from sliding_window.lib.packet_stream import PacketStream
 
 
-def receive_file(port, output_path):
+def receiver1(port, output_path):
+
+    print(f"Receiving file on port {port} and saving to {output_path}")
 
     # The packet streamer
-    packet_stream = PacketStream(REMOTE_HOST, port)
+    packet_stream = PacketStream("", port)
 
     # Listen for packets
     packet_generator = packet_stream.listen()
+
+    print("Packet generator created")
+
+    for packet in packet_generator:
+        print(packet)
+
+    print("Packet generator finished")
 
     # Convert it into a file
     file_stream = FileStream(output_path)
@@ -23,6 +31,8 @@ def receive_file(port, output_path):
     # Write received data to file
     packet_stream.close()
 
+    print("Finished receiving file 1")
+
 
 if __name__ == "__main__":
     try:
@@ -32,4 +42,4 @@ if __name__ == "__main__":
         print("Usage: python3 Receiver1.py <Port> <Filename>")
         sys.exit(1)
 
-    receive_file(port, output_filename)
+    receiver1(port, output_filename)

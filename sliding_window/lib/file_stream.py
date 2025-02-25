@@ -6,13 +6,19 @@ from sliding_window.lib.packet import Packet
 
 class FileStream:
 
-    def __init__(self, file_path):
+    def __init__(self, file_path, debug=True):
 
         # The dictionary we are building for the data
         self.file_dic = {}
         self.file_path = file_path
 
+        self.debug = debug
+
     def write(self):
+
+        if self.debug:
+            print(f"Writing file to {self.file_path}")
+
         with open(self.file_path, "wb") as f:
             for seq in sorted(self.file_dic.keys()):
                 f.write(self.file_dic[seq])
@@ -48,8 +54,13 @@ class FileStream:
 
     def from_packets(self, packets):
 
+        print("Waiting for packets")
+
         # Process the packet
         for packet in packets:
+
+            if self.debug:
+                print(f"Received packet {packet.seq_number}")
 
             # Add the packet to the dictionary
             self.file_dic[packet.seq_number] = packet.data
@@ -57,3 +68,5 @@ class FileStream:
             # If the packet is the last packet
             if packet.eof_flag:
                 break
+
+        print("Finished waiting for packets")
