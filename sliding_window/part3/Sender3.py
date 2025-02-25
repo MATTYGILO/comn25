@@ -1,44 +1,14 @@
 import sys
 import os
 import time
-import threading
+
 
 # Import your new classes for file reading and packet handling.
 from sliding_window.lib.file_stream import FileStream
 from sliding_window.lib.packet_stream import PacketStream
 
 
-def wait_for_acks(indices, packet_stream):
-
-    # Function to wait for an ACK for a single packet
-    def wait_for_ack(index, result_dict):
-        if packet_stream.wait_for_ack(index, timeout_ms):
-            result_dict[index] = True
-        else:
-            result_dict[index] = False
-
-    # Dictionary to store ACK results
-    ack_results = {}
-
-    # Create and start threads to wait for ACKs concurrently
-    threads = []
-    for i in indices:
-        thread = threading.Thread(target=wait_for_ack, args=(i, ack_results))
-        thread.start()
-        threads.append(thread)
-
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join()
-
-    # Check ACK results
-    for i in indices:
-        if not ack_results.get(i, False):
-            print("Failed on {}".format(i))
-            return i
-
-
-def send_window(packet_stream, file_stream, start_index, window_size):
+def send_window(packet_stream, file_stream, start_index, window_size, timeout_ms):
 
     # The indices we are waiting for
     indices = range(start_index, min(start_index + window_size, len(file_stream)))
@@ -54,6 +24,14 @@ def send_window(packet_stream, file_stream, start_index, window_size):
         # Send the packet
         packet_stream.sock.sendto(packet.to_bytes(), (remote_host, port))
 
+    # Wait for the acks
+    acks = packet_stream.wait_for_acks(indices, timeout_ms)
+
+    # Check ACK results
+    for i in indices:
+        if not acks.get(i, False):
+            print("Failed on {}".format(i))
+            return i
 
     # The index we got to
     return start_index + window_size
@@ -91,9 +69,7 @@ def sender3(remote_host, port, filename, timeout_ms, window_size):
     while n_acked < len(file_stream):
 
         # Send the window
-        n_acked = send_window(packet_stream, file_stream, n_acked, window_size)
-
-
+        n_acked = send_window(packet_stream, file_stream, n_acked, window_size, timeout_ms)
 
     # 9. Done sending the file; calculate throughput and close.
     elapsed_time = time.time() - start_time
