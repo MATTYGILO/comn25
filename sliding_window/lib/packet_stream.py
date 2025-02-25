@@ -72,20 +72,17 @@ class PacketStream:
 
         return ack_results
 
-    def send_ack(self, seq_number):
+    def send_ack(self, seq):
 
         # Send an acknowledgment for the received packet
-        ack = struct.pack("!H", seq_number)
-
-        # Make it the ack size
-        if len(ack) < ACK_SIZE:
-            ack += b'\x00' * (ACK_SIZE - len(ack))
-        else:
-            ack = ack[:ACK_SIZE]
-
-        print("Sending ack {}".format(seq_number))
-
+        ack = struct.pack("!H", seq)
+        ack += b'\x00'
         self.sock.sendto(ack, self.addr)
+
+    def send_nack(self, seq):
+        nack = struct.pack("!H", seq)
+        nack += b'\x01'
+        self.sock.sendto(nack, self.addr)
 
     def listen(self):
 
