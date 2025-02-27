@@ -6,15 +6,11 @@ from sliding_window.lib.packet_stream import PacketStream
 
 def receiver1(port, output_path):
 
-    print(f"Receiving file on port {port} and saving to {output_path}")
-
     # The packet streamer
     packet_stream = PacketStream("0.0.0.0", port)
 
     # Listen for packets
     packet_generator = packet_stream.listen()
-
-    print("Packet generator created")
 
     # Convert it into a file
     file_stream = FileStream(output_path)
@@ -25,8 +21,6 @@ def receiver1(port, output_path):
 
     # Write received data to file
     packet_stream.close()
-
-    print("Finished receiving file 1")
 
 
 if __name__ == "__main__":

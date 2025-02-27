@@ -3,12 +3,12 @@ import time
 import os
 
 # Configuration
-REMOTE_HOST = "127.0.0.1"  # Using IP instead of 'localhost' for consistency
+remoteHost = "127.0.0.1"  # Using IP instead of 'localhost' for consistency
 PORT = 54321
 INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
 TIMEOUT = 3000  # Retransmission timeout in milliseconds
-WINDOW_SIZE = 5  # Set default window size for Go-Back-N
+windowSize = 5  # Set default window size for Go-Back-N
 
 def run_test():
     # Check if input file exists
@@ -21,7 +21,7 @@ def run_test():
         os.remove(OUTPUT_FILE)
 
     # Start Receiver3.py
-    receiver_cmd = f"python3 Receiver4.py {PORT} {OUTPUT_FILE} {WINDOW_SIZE}"
+    receiver_cmd = f"python3 Receiver4.py {PORT} {OUTPUT_FILE} {windowSize}"
     print(f"Starting Receiver: {receiver_cmd}")
     receiver_process = subprocess.Popen(receiver_cmd, shell=True)
 
@@ -29,7 +29,7 @@ def run_test():
     time.sleep(1)  # Increased to 3 seconds
 
     # Start Sender3.py with Go-Back-N parameters
-    sender_cmd = f"python3 Sender4.py {REMOTE_HOST} {PORT} {INPUT_FILE} {TIMEOUT} {WINDOW_SIZE}"
+    sender_cmd = f"python3 Sender4.py {remoteHost} {PORT} {INPUT_FILE} {TIMEOUT} {windowSize}"
     print(f"Starting Sender: {sender_cmd}")
     sender_process = subprocess.Popen(sender_cmd, shell=True)
 

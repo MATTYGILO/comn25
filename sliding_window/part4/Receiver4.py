@@ -4,7 +4,7 @@ from sliding_window.lib.file_stream import FileStream
 from sliding_window.lib.packet_stream import PacketStream
 
 
-def receiver4(port, output_path, window_size):
+def receiver4(port, output_path, windowSize):
 
     print(f"Receiving file on port {port} and saving to {output_path}")
 

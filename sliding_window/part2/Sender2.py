@@ -1,19 +1,12 @@
-import socket
 import sys
 import os
-import time
 
 from sliding_window.lib.file_stream import FileStream
 from sliding_window.lib.packet_stream import PacketStream
+from sliding_window.lib.utils import throughput
 
 
-def sender2(remote_host, port, filename, timeout):
-
-    # Start the packet stream
-    packet_stream = PacketStream(remote_host, port)
-
-    # Create the file stream
-    file_stream = FileStream(filename)
+def sender2(file_stream, packet_stream, timeout):
 
     # The packet generator
     packet_generator = file_stream.to_packets()
@@ -29,14 +22,16 @@ def sender2(remote_host, port, filename, timeout):
         while not received_ack:
 
             # Send the packet
-            packet_stream.sock.sendto(packet.to_bytes(), (remote_host, port))
+            packet_stream.sock.sendto(packet.to_bytes(), (remoteHost, port))
 
             # Wait for acknowledgment
-            received_ack = packet_stream.wait_for_ack(packet.seq_number, timeout)
+            ack_seq = packet_stream.wait_for_ack(packet.seq_number, timeout)
 
-            if not received_ack:
+            if ack_seq != packet.seq_number:
                 print(f"Retransmitting packet {packet.seq_number}")
                 n_retrans += 1
+            else:
+                received_ack = True
 
     # Close the socket
     packet_stream.close()
@@ -49,13 +44,17 @@ if __name__ == "__main__":
         print("Usage: python3 Sender3.py <RemoteHost> <Port> <Filename> <Timeout>")
         sys.exit(1)
 
-    remote_host = sys.argv[1]
+    remoteHost = sys.argv[1]
     port = int(sys.argv[2])
     filename = sys.argv[3]
-    timeout = int(sys.argv[4])
+    retryTimeout = int(sys.argv[4])
 
-    if not os.path.exists(filename):
-        print("File not found:", filename)
-        sys.exit(1)
+    # Start the packet stream
+    packet_stream = PacketStream(remoteHost, port)
 
-    sender2(remote_host, port, filename, timeout)
+    # Create the file stream
+    file_stream = FileStream(filename)
+
+    # Get the throughput
+    throughput(sender2, file_stream.file_size,(file_stream, packet_stream, retryTimeout))
+

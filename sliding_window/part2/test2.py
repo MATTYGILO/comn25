@@ -3,7 +3,7 @@ import time
 import os
 
 # Configuration
-REMOTE_HOST = "localhost"
+remoteHost = "localhost"
 PORT = 54321
 INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
@@ -28,7 +28,7 @@ def run_test():
     time.sleep(1)
 
     # Start Sender3.py
-    sender_cmd = f"python3 Sender2.py {REMOTE_HOST} {PORT} {INPUT_FILE} {30}"
+    sender_cmd = f"python3 Sender2.py {remoteHost} {PORT} {INPUT_FILE} {30}"
     print(f"Starting Sender: {sender_cmd}")
     sender_process = subprocess.Popen(sender_cmd, shell=True)
 

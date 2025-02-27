@@ -1,49 +1,9 @@
-# import subprocess
-# import threading
-#
-# from sliding_window.part1.Receiver1 import receiver1
-#
-#
-# def run_receiver():
-#     receiver1(8002, "received.jpg")
-#
-# if __name__ == "__main__":
-#     # Start the receiver in a separate thread
-#     receiver_thread = threading.Thread(target=run_receiver)
-#     receiver_thread.start()
-#
-#     # Start the sender as a subprocess
-#     sender = subprocess.Popen(
-#         ["python3", "Sender3.py", "localhost", "8002", "../assets/test.jpg"],
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.PIPE,
-#         text=True
-#     )
-#
-#     # Stream the sender's outputs
-#     while True:
-#         sender_output = sender.stdout.readline()
-#         sender_error = sender.stderr.readline()
-#
-#         if sender_output:
-#             print("[Sender] " + sender_output.strip())
-#         if sender_error:
-#             print("[Sender ERROR] " + sender_error.strip())
-#
-#         if sender.poll() is not None:
-#             break
-#
-#     sender.stdout.close()
-#     sender.stderr.close()
-#
-#     # Wait for the receiver to finish
-#     receiver_thread.join()
 import subprocess
 import time
 import os
 
 # Configuration
-REMOTE_HOST = "localhost"
+remoteHost = "localhost"
 PORT = 54321
 INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
@@ -68,7 +28,7 @@ def run_test():
     time.sleep(1)
 
     # Start Sender3.py
-    sender_cmd = f"python3 Sender1.py {REMOTE_HOST} {PORT} {INPUT_FILE}"
+    sender_cmd = f"python3 Sender1.py {remoteHost} {PORT} {INPUT_FILE}"
     print(f"Starting Sender: {sender_cmd}")
     sender_process = subprocess.Popen(sender_cmd, shell=True)
 

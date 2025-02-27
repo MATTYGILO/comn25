@@ -3,12 +3,12 @@ import time
 import os
 
 # Configuration
-REMOTE_HOST = "127.0.0.1"
+remoteHost = "127.0.0.1"
 PORT = 54321
 INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
 TIMEOUT = 30
-WINDOW_SIZE = 5
+windowSize = 5
 
 def run_test():
     # Check if input file exists
@@ -29,7 +29,7 @@ def run_test():
     time.sleep(1)  # Increased to 3 seconds
 
     # Start Sender3.py with Go-Back-N parameters
-    sender_cmd = f"python3 Sender3.py {REMOTE_HOST} {PORT} {INPUT_FILE} {TIMEOUT} {WINDOW_SIZE}"
+    sender_cmd = f"python3 Sender3.py {remoteHost} {PORT} {INPUT_FILE} {TIMEOUT} {windowSize}"
     print(f"Starting Sender: {sender_cmd}")
     sender_process = subprocess.Popen(sender_cmd, shell=True)
 

@@ -8,10 +8,10 @@ from sliding_window.lib.packet import Packet
 
 class PacketStream:
 
-    def __init__(self, remote_host, port, packets=None, debug=True, buffer_size=None):
+    def __init__(self, remoteHost, port, packets=None, debug=True, buffer_size=None):
 
         # The packet stream port
-        self.remote_host = remote_host
+        self.remoteHost = remoteHost
         self.port = port
 
         # Create a UDP socket
@@ -81,7 +81,7 @@ class PacketStream:
 
             # Send the packet
             if random.random() > 0.0005:
-                self.sock.sendto(packet.to_bytes(), (self.remote_host, self.port))
+                self.sock.sendto(packet.to_bytes(), (self.remoteHost, self.port))
 
     def send_ack(self, seq):
 
@@ -98,7 +98,7 @@ class PacketStream:
     def listen(self):
 
         # Bind the socket
-        self.sock.bind((self.remote_host, self.port))
+        self.sock.bind((self.remoteHost, self.port))
 
         if self.debug:
             print(f"Listening on port {self.port}...")

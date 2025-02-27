@@ -6,7 +6,7 @@ from sliding_window.lib.packet import Packet
 
 class FileStream:
 
-    def __init__(self, file_path, debug=True):
+    def __init__(self, file_path, debug=False):
 
         # The dictionary we are building for the data
         self.file_dic = {}
@@ -14,6 +14,11 @@ class FileStream:
 
         self.debug = debug
 
+        # Read the file
+        if os.path.exists(self.file_path):
+            self.read()
+
+    @property
     def file_size(self):
         return os.path.getsize(self.file_path)
 
