@@ -23,7 +23,7 @@ def send_window(packet_stream, file_stream, start_index, window_size, timeout_ms
 
         # Send the packet
         if random.random() > 0.0005:
-            packet_stream.sock.sendto(packet.to_bytes(), (remote_host, port))
+            packet_stream.sock.sendto(packet.to_bytes(), (packet_stream.remote_host, packet_stream.port))
 
     # Wait for the acks
     acks = packet_stream.wait_for_acks(indices, timeout_ms)
