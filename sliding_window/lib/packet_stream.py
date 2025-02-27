@@ -1,3 +1,4 @@
+import random
 import socket
 import struct
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -32,24 +33,55 @@ class PacketStream:
         try:
             self.sock.settimeout(timeout / 1000)
             ack, self.addr = self.sock.recvfrom(ACK_SIZE)
-            return struct.unpack("!H", ack)[0] == seq_number
+            return struct.unpack("!H", ack)[0]
         except socket.timeout:
             print("{} timeout out".format(seq_number))
-            return False
+            return None
 
-    def wait_for_acks(self, indices, timeout, early_stop=False):
-        ack_results = {}
+    def should_stop(self, ack_results, indices):
+        # Check each index; if any value is still None, we can't decide yet.
+        # If any value is False, we trigger early stop.
+        for index in indices:
+            if ack_results[index] is None:
+                return False
+            if ack_results[index] is False:
+                return True
+        return False
 
-        with ThreadPoolExecutor(max_workers=len(indices)) as executor:
+    def wait_for_acks(self, indices, timeout, multi_thread=False):
+
+        # The results of the acks
+        ack_results = {i: None for i in indices}
+
+        with ThreadPoolExecutor(max_workers=len(indices) if multi_thread else 1) as executor:
+
             # Submit tasks and map each future to its corresponding index
             future_to_index = {executor.submit(self.wait_for_ack, i, timeout): i for i in indices}
 
             for future in as_completed(future_to_index):
                 index = future_to_index[future]
                 result = future.result()
+
+                # Add the result to the ack_results
                 ack_results[index] = result
 
+                # Check if there is a True, ... , False
+                if not multi_thread and self.should_stop(ack_results, indices):
+                    break
+
         return ack_results
+
+    def send_packets(self, packets):
+
+        # Send all packets in the window
+        for packet in packets:
+
+            if packet is None:
+                break
+
+            # Send the packet
+            if random.random() > 0.0005:
+                self.sock.sendto(packet.to_bytes(), (self.remote_host, self.port))
 
     def send_ack(self, seq):
 
