@@ -14,6 +14,9 @@ class FileStream:
 
         self.debug = debug
 
+    def file_size(self):
+        return os.path.getsize(self.file_path)
+
     def n_packets(self):
         return len(self.file_dic)
 
