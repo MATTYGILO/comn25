@@ -1,7 +1,7 @@
 import sys
 import os
 import time
-
+import random
 
 # Import your new classes for file reading and packet handling.
 from sliding_window.lib.file_stream import FileStream
@@ -22,7 +22,8 @@ def send_window(packet_stream, file_stream, start_index, window_size, timeout_ms
             break
 
         # Send the packet
-        packet_stream.sock.sendto(packet.to_bytes(), (remote_host, port))
+        if random.random() > 0.0005:
+            packet_stream.sock.sendto(packet.to_bytes(), (remote_host, port))
 
     # Wait for the acks
     acks = packet_stream.wait_for_acks(indices, timeout_ms)
@@ -30,7 +31,6 @@ def send_window(packet_stream, file_stream, start_index, window_size, timeout_ms
     # Check ACK results
     for i in indices:
         if not acks.get(i, False):
-            print("Failed on {}".format(i))
             return i
 
     # The index we got to

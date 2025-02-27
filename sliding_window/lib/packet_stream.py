@@ -1,7 +1,6 @@
 import socket
 import struct
-import time
-from threading import Thread, Event
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from sliding_window.lib.const import PACKET_SIZE, ACK_SIZE
 from sliding_window.lib.packet import Packet
 
@@ -30,45 +29,25 @@ class PacketStream:
         self.buffer = [] if buffer_size else None
 
     def wait_for_ack(self, seq_number, timeout):
+        try:
+            self.sock.settimeout(timeout / 1000)
+            ack, self.addr = self.sock.recvfrom(ACK_SIZE)
+            return struct.unpack("!H", ack)[0] == seq_number
+        except socket.timeout:
+            print("{} timeout out".format(seq_number))
+            return False
 
-        # Wait for the ack
-        acks = self.wait_for_acks([seq_number], timeout)
-
-        return acks.get(seq_number, False)
-
-    def wait_for_acks(self, indices, timeout, multi_thread=False):
-        cancel_event = Event()
+    def wait_for_acks(self, indices, timeout, early_stop=False):
         ack_results = {}
 
-        def wait_ack(seq_number):
-            if cancel_event.is_set():
-                ack_results[seq_number] = False
-                return
-            try:
-                self.sock.settimeout(timeout / 1000)
-                ack, self.addr = self.sock.recvfrom(ACK_SIZE)
-                result = struct.unpack("!H", ack)[0] == seq_number
-                ack_results[seq_number] = result
-                if not result:
-                    cancel_event.set()
-            except socket.timeout:
-                ack_results[seq_number] = False
-                cancel_event.set()
+        with ThreadPoolExecutor(max_workers=len(indices)) as executor:
+            # Submit tasks and map each future to its corresponding index
+            future_to_index = {executor.submit(self.wait_for_ack, i, timeout): i for i in indices}
 
-        if multi_thread:
-            threads = []
-            for seq_number in indices:
-                thread = Thread(target=wait_ack, args=(seq_number,))
-                thread.start()
-                threads.append(thread)
-
-            for t in threads:
-                t.join()
-        else:
-            for seq_number in indices:
-                wait_ack(seq_number)
-                if cancel_event.is_set():
-                    break
+            for future in as_completed(future_to_index):
+                index = future_to_index[future]
+                result = future.result()
+                ack_results[index] = result
 
         return ack_results
 
