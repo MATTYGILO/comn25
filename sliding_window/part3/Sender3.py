@@ -1,9 +1,7 @@
 import sys
 import os
 import time
-import random
 
-# Import your new classes for file reading and packet handling.
 from sliding_window.lib.file_stream import FileStream
 from sliding_window.lib.packet_stream import PacketStream
 
@@ -13,20 +11,14 @@ def send_window(packet_stream, file_stream, start_index, window_size, timeout_ms
     # The indices we are waiting for
     indices = range(start_index, min(start_index + window_size, len(file_stream)))
 
-    # Send all packets in the window
-    for i in indices:
-        # Get the packet
-        packet = file_stream.get_packet(i)
+    # Create the packets
+    packets = [file_stream.get_packet(i) for i in indices]
 
-        if packet is None:
-            break
-
-        # Send the packet
-        if random.random() > 0.0005:
-            packet_stream.sock.sendto(packet.to_bytes(), (packet_stream.remote_host, packet_stream.port))
+    # Send the packets
+    packet_stream.send_packets(packets)
 
     # Wait for the acks
-    acks = packet_stream.wait_for_acks(indices, timeout_ms)
+    acks = packet_stream.wait_for_acks(indices, timeout_ms, multi_thread=False)
 
     # Check ACK results
     for i in indices:
@@ -59,7 +51,6 @@ def sender3(remote_host, port, filename, timeout_ms, window_size):
 
     # 4. For measuring throughput.
     start_time = time.time()
-    total_bytes_sent = 0
 
     print(f"Sender3 started for file: {filename}")
     print(f"File length (in packets): {len(file_stream)}")
@@ -73,7 +64,10 @@ def sender3(remote_host, port, filename, timeout_ms, window_size):
 
     # 9. Done sending the file; calculate throughput and close.
     elapsed_time = time.time() - start_time
-    throughput_kbps = (total_bytes_sent / 1024.0) / elapsed_time  # KB/s
+
+    print("Elapsed time: {:.2f} seconds".format(elapsed_time))
+
+    throughput_kbps = (file_stream.file_size() / 1024.0) / elapsed_time  # KB/s
     print(f"{throughput_kbps:.2f}")  # Print only throughput on one line as required.
 
     packet_stream.close()

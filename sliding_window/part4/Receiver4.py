@@ -4,7 +4,7 @@ from sliding_window.lib.file_stream import FileStream
 from sliding_window.lib.packet_stream import PacketStream
 
 
-def receiver4(port, output_path):
+def receiver4(port, output_path, window_size):
 
     print(f"Receiving file on port {port} and saving to {output_path}")
 
@@ -32,8 +32,8 @@ def receiver4(port, output_path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python3 Receiver3.py <Port> <Filename>")
+    if len(sys.argv) != 4:
+        print("Usage: python3 Receiver3.py <Port> <Filename> <Window Size>")
         sys.exit(1)
 
     port = int(sys.argv[1])

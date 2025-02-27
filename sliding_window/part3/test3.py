@@ -3,12 +3,12 @@ import time
 import os
 
 # Configuration
-REMOTE_HOST = "127.0.0.1"  # Using IP instead of 'localhost' for consistency
+REMOTE_HOST = "127.0.0.1"
 PORT = 54321
 INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
-TIMEOUT = 3000  # Retransmission timeout in milliseconds
-WINDOW_SIZE = 5  # Set default window size for Go-Back-N
+TIMEOUT = 30
+WINDOW_SIZE = 5
 
 def run_test():
     # Check if input file exists

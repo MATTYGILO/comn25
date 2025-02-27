@@ -2,9 +2,30 @@ import sys
 import os
 import time
 
-# Import your new classes for file reading and packet handling.
 from sliding_window.lib.file_stream import FileStream
 from sliding_window.lib.packet_stream import PacketStream
+
+def send_window(packet_stream, file_stream, start_index, window_size, timeout_ms):
+
+    # The indices we are waiting for
+    indices = range(start_index, min(start_index + window_size, len(file_stream)))
+
+    while len(indices) > 0:
+
+        # Create the packets
+        packets = [file_stream.get_packet(i) for i in indices]
+
+        # Send the packets
+        packet_stream.send_packets(packets)
+
+        # Wait for the acks
+        acks = packet_stream.wait_for_acks(indices, timeout_ms, multi_thread=True)
+
+        # Remove any indices that were acknowledged
+        indices = [i for i in indices if acks.get(i, False) is False]
+
+    # The index we got to
+    return start_index + window_size
 
 def sender4(remote_host, port, filename, timeout_ms, window_size):
     """
@@ -21,48 +42,24 @@ def sender4(remote_host, port, filename, timeout_ms, window_size):
 
     # 2. Create the FileStream from your library to read the file.
     file_stream = FileStream(filename)
-    file_stream.read()  # Load file data into memory (if your library requires this).
-    packet_generator = file_stream.to_packets()
+    file_stream.read()
 
     # 3. Initialize GBN window variables using n_acked and n_sent.
-    n_acked = 0  # Base of the window (oldest unacknowledged packet)
-    n_sent = 0  # Next sequence number to send
+    n_acked = 0
 
     # 4. For measuring throughput.
     start_time = time.time()
-    total_bytes_sent = 0
-
-    print(f"Sender3 started for file: {filename}")
-    print(f"File length (in packets): {len(file_stream)}")
-    print(f"Using window size = {window_size}, timeout = {timeout_ms} ms")
 
     # 5. Main sending loop: keep sending until we've sent all packets.
     while n_acked < len(file_stream):
 
-        # 6. Send as many packets as the window allows.
-        while n_sent < n_acked + window_size and n_sent < len(file_stream):
-            packet = next(packet_generator)  # Get the next packet
-            packet_stream.sock.sendto(packet.to_bytes(), (remote_host, port))
-            print(f"Sent packet {packet.seq_number}")
-
-            n_sent += 1
-            total_bytes_sent += len(packet.data)
-
-        # 7. Check for ACKs for all packets in the window.
-        if packet_stream.wait_for_ack(n_acked, timeout_ms):
-            n_acked += 1
-            continue
-
-        # Resend all packets in the current window.
-        for seq in range(n_acked, n_sent):
-            packet = file_stream[seq]  # Get the packet from the file stream by index
-            packet_stream.sock.sendto(packet.to_bytes(), (remote_host, port))
-            print(f"Retransmitted packet {packet.seq_number}")
+        # Send the window
+        n_acked = send_window(packet_stream, file_stream, n_acked, window_size, timeout_ms)
 
     # 9. Done sending the file; calculate throughput and close.
     elapsed_time = time.time() - start_time
-    throughput_kbps = (total_bytes_sent / 1024.0) / elapsed_time  # KB/s
-    print(f"{throughput_kbps:.2f}")  # Print only throughput on one line as required.
+    throughput_kbps = (file_stream.file_size() / 1024.0) / elapsed_time  # KB/s
+    print(f"{throughput_kbps:.2f}")
 
     packet_stream.close()
     print("Finished sending file via Go-Back-N.")

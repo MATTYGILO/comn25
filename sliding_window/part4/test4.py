@@ -7,7 +7,7 @@ REMOTE_HOST = "127.0.0.1"  # Using IP instead of 'localhost' for consistency
 PORT = 54321
 INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
-TIMEOUT = 30  # Retransmission timeout in milliseconds
+TIMEOUT = 3000  # Retransmission timeout in milliseconds
 WINDOW_SIZE = 5  # Set default window size for Go-Back-N
 
 def run_test():
@@ -21,7 +21,7 @@ def run_test():
         os.remove(OUTPUT_FILE)
 
     # Start Receiver3.py
-    receiver_cmd = f"python3 Receiver4.py {PORT} {OUTPUT_FILE}"
+    receiver_cmd = f"python3 Receiver4.py {PORT} {OUTPUT_FILE} {WINDOW_SIZE}"
     print(f"Starting Receiver: {receiver_cmd}")
     receiver_process = subprocess.Popen(receiver_cmd, shell=True)
 
