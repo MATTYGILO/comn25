@@ -1,5 +1,4 @@
 import sys
-import os
 import time
 
 from sliding_window.lib.file_stream import FileStream

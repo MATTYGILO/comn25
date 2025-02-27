@@ -24,9 +24,6 @@ def run_test():
     print(f"Starting Receiver: {receiver_cmd}")
     receiver_process = subprocess.Popen(receiver_cmd, shell=True)
 
-    # Give receiver some time to start listening
-    time.sleep(1)
-
     # Start Sender3.py
     sender_cmd = f"python3 Sender1.py {remoteHost} {PORT} {INPUT_FILE}"
     print(f"Starting Sender: {sender_cmd}")

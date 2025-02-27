@@ -33,4 +33,5 @@ if __name__ == "__main__":
     # Create the file stream
     file_stream = FileStream(filename)
 
+    # Get the throughput
     throughput(sender1, file_stream.file_size, (file_stream, packet_stream))

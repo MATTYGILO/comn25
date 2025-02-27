@@ -27,20 +27,14 @@ class FileStream:
 
     def write(self):
 
-        if self.debug:
-            print(f"Writing file to {self.file_path}")
-
         with open(self.file_path, "wb") as f:
             for seq in sorted(self.file_dic.keys()):
                 f.write(self.file_dic[seq])
 
     def read(self):
 
-        print(f"Reading file from {self.file_path}")
-
         # Check if file exists
         if not os.path.exists(self.file_path):
-            print(f"File {self.file_path} not found.")
             raise FileNotFoundError
 
         with open(self.file_path, "rb") as f:
@@ -94,14 +88,9 @@ class FileStream:
         # Process the packet
         for packet in packets:
 
-            if self.debug:
-                print(f"Received packet {packet.seq_number}")
-
             # Add the packet to the dictionary
             self.from_packet(packet)
 
             # If the packet is the last packet
             if packet.eof_flag:
                 break
-
-        print("Finished waiting for packets")
