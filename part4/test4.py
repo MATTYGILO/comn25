@@ -1,11 +1,11 @@
 import subprocess
 import time
 import os
+from lib.const import INPUT_FILE
 
 # Configuration
 remoteHost = "127.0.0.1"  # Using IP instead of 'localhost' for consistency
 PORT = 54321
-INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
 TIMEOUT = 3000  # Retransmission timeout in milliseconds
 windowSize = 5  # Set default window size for Go-Back-N

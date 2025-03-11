@@ -1,11 +1,11 @@
 import subprocess
 import time
 import os
+from lib.const import INPUT_FILE
 
 # Configuration
 remoteHost = "127.0.0.1"
 PORT = 54321
-INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
 TIMEOUT = 30
 windowSize = 5

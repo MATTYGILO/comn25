@@ -2,12 +2,11 @@ import subprocess
 import time
 import os
 
-from sliding_window.lib.qdisk import qdisk
+from lib.const import INPUT_FILE
 
 # Configuration
 remoteHost = "localhost"
 PORT = 54321
-INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
 
 
