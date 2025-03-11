@@ -2,8 +2,6 @@ import subprocess
 import time
 import os
 
-from sliding_window.lib.qdisk import qdisk
-
 # Configuration
 remoteHost = "localhost"
 PORT = 54321
