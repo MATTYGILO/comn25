@@ -2,6 +2,8 @@ import subprocess
 import time
 import os
 
+from sliding_window.lib.qdisk import qdisk
+
 # Configuration
 remoteHost = "localhost"
 PORT = 54321
@@ -59,13 +61,6 @@ def run_test():
 
     # Return the throughput
     return throughput
-
-
-def question1():
-
-    # Set the throughput
-
-    return run_test()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ import subprocess
 import time
 import os
 
+from sliding_window.lib.qdisk import qdisk
+
 # Configuration
 remoteHost = "localhost"
 PORT = 54321
@@ -9,7 +11,7 @@ INPUT_FILE = "../assets/test.jpg"
 OUTPUT_FILE = "rfile.jpg"
 
 
-def run_test():
+def run_test(timeout=30):
     # Check if input file exists
     if not os.path.exists(INPUT_FILE):
         print(f"Input file '{INPUT_FILE}' not found.")
@@ -28,7 +30,7 @@ def run_test():
     time.sleep(1)
 
     # Start Sender3.py
-    sender_cmd = f"python3 Sender2.py {remoteHost} {PORT} {INPUT_FILE} {30}"
+    sender_cmd = f"python3 Sender2.py {remoteHost} {PORT} {INPUT_FILE} {timeout}"
     print(f"Starting Sender: {sender_cmd}")
     sender_process = subprocess.Popen(sender_cmd, shell=True)
 
@@ -53,6 +55,19 @@ def run_test():
             print(result.stdout)
     else:
         print("Test failed: Output file not found.")
+
+
+def question1():
+    qdisk(loss_rate=0.5, delay=10, rate=5)
+
+    timeouts = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100]
+
+    # Set the throughput
+    for timeout in timeouts:
+        print(f"Timeout: {timeout}")
+        run_test(timeout)
+
+    return run_test()
 
 
 if __name__ == "__main__":
