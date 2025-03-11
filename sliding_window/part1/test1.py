@@ -10,6 +10,7 @@ OUTPUT_FILE = "rfile.jpg"
 
 
 def run_test():
+
     # Check if input file exists
     if not os.path.exists(INPUT_FILE):
         print(f"Input file '{INPUT_FILE}' not found.")
@@ -27,7 +28,7 @@ def run_test():
     # Start Sender3.py
     sender_cmd = f"python3 Sender1.py {remoteHost} {PORT} {INPUT_FILE}"
     print(f"Starting Sender: {sender_cmd}")
-    sender_process = subprocess.Popen(sender_cmd, shell=True)
+    sender_process = subprocess.Popen(sender_cmd, shell=True, stdout=subprocess.PIPE)
 
     # Wait for the sender to complete
     sender_process.wait()
@@ -40,6 +41,11 @@ def run_test():
     receiver_process.terminate()
     print("Receiver terminated.")
 
+    # Get the result output throughput
+    throughput = sender_process.stdout.read().decode("utf-8").strip()
+
+    print("test1 result:", result)
+
     # Verify file integrity
     if os.path.exists(OUTPUT_FILE):
         result = subprocess.run(["diff", INPUT_FILE, OUTPUT_FILE], capture_output=True, text=True)
@@ -50,6 +56,16 @@ def run_test():
             print(result.stdout)
     else:
         print("Test failed: Output file not found.")
+
+    # Return the throughput
+    return throughput
+
+
+def question1():
+
+    # Set the throughput
+
+    return run_test()
 
 
 if __name__ == "__main__":
